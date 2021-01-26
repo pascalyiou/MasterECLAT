@@ -80,15 +80,57 @@ XX1.JJA.max = tapply(XX[conv.time$year <= 2000 & conv.time$month %in% c(6:8)],
 XX2.JJA.max = tapply(XX[conv.time$year >= 2010 & conv.time$month %in% c(6:8)],
                      conv.time$year[conv.time$year >= 2010 & conv.time$month %in% c(6:8)],max)
 
-## Essai sur une variable synthetique:
+## Exercice 1:
+## Cumuls et max du printemps: MAM
+
+## Exercice 2 (optionel):
+## Cumuls et max d'hiver: DJF
+## Attention, piege!
+
+
+## Essai de calcul de GEV/GPD sur une variable synthetique:
+## z: simulation d'une variable aleatoire de GEV
+## (donc les max d'une autre variable)
 z <- revd(100, loc=30, scale=7, shape=0.1)
+## z.gev: parametres de GEV de z
 z.gev <- fevd(z)
+## A quoi ca ressemble?
 z.gev
+names(z.gev)
+names(z.gev$results)
+
+z.summ=summary(z.gev)
+z.summ$par
+z.summ$se.theta
+
+## Trace des diagnostics
 plot(z.gev)
-## Probabilites estimees et temps de retour
+
+## Calcul de niveaux de retour
+return.level(z.gev, return.period=c(2,20,100), do.ci=TRUE)
+
+## Probabilites estimees et periodes de retour
 pextRemes(z.gev, q=quantile(z, probs=c(0.85, 0.95, 0.99)), lower.tail=FALSE)
+## Ici, q est un ensemble de niveaux de retour
 z.gev.rt = 1/(1-pextRemes(z.gev, q=c(50,60,70)))
 
+## Exemple de boostrap sur les valeurs de z
+nboot=100
+nz=length(z)
+z.gev.boot=c()
+for(i in 1:nboot){
+## Tirage d'un sous-echantillon de taille aleatoire de z    
+    z.dum=sample(z,size=nz,replace=TRUE)
+    z.dum.gev = fevd(z.dum)
+    z.gev.boot = rbind(z.gev.boot,z.dum.gev$results$par)
+}
+apply(z.gev.boot,2,sd)
+## Comparer avec z.summ$se.theta
+
+## En pratique, c'est un peu plus complique a faire pour GPD:
+## il peut y avoir plusieurs depassements de seuil par an
+## La procedure de sous echantillonnage doit se faire sur les depassements
+## de seuil (par sur les jours).
 
 ## Calculs de GEV sur les max annuels et JJA
 XX1.gev=fevd(XX1.max)
